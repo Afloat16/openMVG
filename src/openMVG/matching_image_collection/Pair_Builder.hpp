@@ -59,6 +59,15 @@ inline bool loadPairs(
   }
   std::string sValue;
   std::vector<std::string> vec_str;
+  const auto readIndex = [](const std::string & token, IndexT & index)
+  {
+    std::istringstream stream(token);
+    stream >> std::ws;
+    if (stream.peek() == '-' || !(stream >> index))
+      return false;
+    stream >> std::ws;
+    return stream.eof();
+  };
   while (std::getline( in, sValue ) )
   {
     vec_str.clear();
@@ -69,15 +78,20 @@ inline bool loadPairs(
       OPENMVG_LOG_ERROR << "loadPairs: Invalid input file: \"" << sFileName << "\".";
       return false;
     }
-    std::stringstream oss;
-    oss.clear(); oss.str(vec_str[0]);
     IndexT I, J;
-    oss >> I;
+    if (!readIndex(vec_str[0], I))
+    {
+      OPENMVG_LOG_ERROR << "loadPairs: Invalid image index: " << vec_str[0];
+      return false;
+    }
     for (IndexT i=1; i<str_size; ++i)
     {
-      oss.clear(); oss.str(vec_str[i]);
-      oss >> J;
-      if ( I > N-1 || J > N-1) //I&J always > 0 since we use unsigned type
+      if (!readIndex(vec_str[i], J))
+      {
+        OPENMVG_LOG_ERROR << "loadPairs: Invalid image index: " << vec_str[i];
+        return false;
+      }
+      if ( I >= N || J >= N)
       {
         OPENMVG_LOG_ERROR
           << "loadPairs: Invalid input file. Image out of range. "

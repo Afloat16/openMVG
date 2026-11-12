@@ -94,6 +94,42 @@ TEST(matching_image_collection, IO_InvalidInput)
   EXPECT_FALSE( loadPairs(expectedPicCount, "pairsT_IO_InvalidInput.txt", loaded_Pairs));
 }
 
+TEST(matching_image_collection, IO_InvalidIndexToken)
+{
+  for (const std::string & input : {
+    "0x1 2", "0 1suffix", "0 1.5", "0 -1", "-1 0", "0 42949672960"})
+  {
+    {
+      std::ofstream file("pairsT_InvalidIndexToken.txt");
+      file << input << '\n';
+    }
+    Pair_Set pairs;
+    EXPECT_FALSE(loadPairs(3, "pairsT_InvalidIndexToken.txt", pairs));
+    EXPECT_TRUE(pairs.empty());
+  }
+}
+
+TEST(matching_image_collection, IO_EmptyImageCollection)
+{
+  const Pair_Set pair = {{0, 1}};
+  EXPECT_TRUE(savePairs("pairsT_EmptyImageCollection.txt", pair));
+  Pair_Set pairs;
+  EXPECT_FALSE(loadPairs(0, "pairsT_EmptyImageCollection.txt", pairs));
+  EXPECT_TRUE(pairs.empty());
+}
+
+TEST(matching_image_collection, IO_MultipleNeighborsWithCRLF)
+{
+  {
+    std::ofstream file("pairsT_MultipleNeighbors.txt");
+    file << "2 0 1\r\n";
+  }
+  Pair_Set pairs;
+  EXPECT_TRUE(loadPairs(3, "pairsT_MultipleNeighbors.txt", pairs));
+  const Pair_Set expected = {{0, 2}, {1, 2}};
+  EXPECT_TRUE(pairs == expected);
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
