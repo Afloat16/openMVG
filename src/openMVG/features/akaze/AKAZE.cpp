@@ -94,8 +94,8 @@ float AKAZE::ComputeAutomaticContrastFactor( const Image<float> & src , const fl
     ++id_bin;
   }
 
-  // Handle 0 bin search
-  if (acc < search_id )
+  // Keep diffusion well-defined when there are no positive gradients.
+  if (search_id == 0 || acc < search_id )
   {
     return 0.03f; // Only empiric value
   }
