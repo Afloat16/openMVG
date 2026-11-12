@@ -356,8 +356,9 @@ void AKAZE::Feature_Detection(std::vector<AKAZEKeypoint>& kpts) const
 bool AKAZE::Do_Subpixel_Refinement( AKAZEKeypoint & kpt, const Image<float> & Ldet) const
 {
   const unsigned int ratio = (1 << kpt.octave);
-  const int x = std::round(kpt.x/ratio);
-  const int y = std::round(kpt.y/ratio);
+  const float offset = 0.5f * (ratio - 1);
+  const int x = std::round((kpt.x - offset) / ratio);
+  const int y = std::round((kpt.y - offset) / ratio);
 
   // Compute the gradient
   const float Dx = 0.5f * (Ldet(y,x+1)  - Ldet(y,x-1));
@@ -377,8 +378,8 @@ bool AKAZE::Do_Subpixel_Refinement( AKAZEKeypoint & kpt, const Image<float> & Ld
   const Vec2 dst = A.fullPivLu().solve(b);
 
   if (std::abs(dst(0)) <= 1.0 && std::abs(dst(1)) <= 1.0) {
-    kpt.x += dst(0) * ratio + 0.5 * (ratio-1);
-    kpt.y += dst(1) * ratio + 0.5 * (ratio-1);
+    kpt.x = (x + dst(0)) * ratio + offset;
+    kpt.y = (y + dst(1)) * ratio + offset;
     return true;
   }
   // Delete the point since its not stable
