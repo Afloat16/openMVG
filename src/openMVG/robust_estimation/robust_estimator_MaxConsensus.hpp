@@ -49,11 +49,11 @@ typename Kernel::Model MaxConsensus
   size_t best_num_inliers = 0;
   typename Kernel::Model best_model;
 
+  if (best_inliers)
+    best_inliers->clear();
+
   // Test if we have sufficient points to for the kernel.
   if (total_samples < min_samples) {
-    if (best_inliers) {
-      best_inliers->resize(0);
-    }
     return best_model;
   }
 

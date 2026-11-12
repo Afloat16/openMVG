@@ -86,6 +86,36 @@ TEST(MaxConsensusLineFitter, TooFewPoints) {
   CHECK_EQUAL(0, vec_inliers.size());
 }
 
+TEST(MaxConsensusLineFitter, ClearsPreviousConsensusWhenNoInliers) {
+  Mat2X xy(2, 3);
+  xy << 1, 2, 3,
+        3, 5, 7;
+  LineKernel kernel(xy);
+  std::vector<uint32_t> inliers;
+
+  MaxConsensus(kernel, ScorerEvaluator<LineKernel>(0.3), &inliers, 8);
+  CHECK_EQUAL(3, inliers.size());
+  MaxConsensus(kernel, ScorerEvaluator<LineKernel>(0.0), &inliers, 8);
+  EXPECT_TRUE(inliers.empty());
+
+  inliers = {0, 1, 2};
+  MaxConsensus(kernel, ScorerEvaluator<LineKernel>(0.3), &inliers, 0);
+  EXPECT_TRUE(inliers.empty());
+}
+
+TEST(MaxConsensusLineFitter, ClearsPreviousConsensusWhenNoModel) {
+  struct NoModelKernel : LineKernel {
+    explicit NoModelKernel(const Mat2X &points) : LineKernel(points) {}
+    void Fit(const std::vector<uint32_t> &, std::vector<Model> *) const {}
+  };
+  const Mat2X xy = Mat2X::Zero(2, 3);
+  NoModelKernel kernel(xy);
+  std::vector<uint32_t> inliers{0, 1, 2};
+
+  MaxConsensus(kernel, ScorerEvaluator<NoModelKernel>(0.3), &inliers, 8);
+  EXPECT_TRUE(inliers.empty());
+}
+
 // From a GT model :
 //  Compute a list of point that fit the model.
 //  Add white noise to given amount of points in this list.

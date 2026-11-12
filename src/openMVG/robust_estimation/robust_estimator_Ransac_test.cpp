@@ -62,9 +62,44 @@ TEST(MaxConsensusLineFitter, TooFewPoints) {
   xy << 1,
         3;   // y = 2x + 1 with x = 1
   LineKernel kernel(xy);
-  std::vector<uint32_t> vec_inliers;
-  RANSAC(kernel, ScorerEvaluator<LineKernel>(0.3), &vec_inliers);
+  std::vector<uint32_t> vec_inliers{42};
+  size_t score = 42;
+  RANSAC(kernel, ScorerEvaluator<LineKernel>(0.3), &vec_inliers, &score);
   CHECK_EQUAL(0, vec_inliers.size());
+  CHECK_EQUAL(0, score);
+}
+
+TEST(RansacLineFitter, ClearsPreviousConsensusWhenNoInliers) {
+  Mat2X xy(2, 3);
+  xy << 1, 2, 3,
+        3, 5, 7;
+  LineKernel kernel(xy);
+  std::vector<uint32_t> inliers;
+  size_t score = 0;
+
+  RANSAC(kernel, ScorerEvaluator<LineKernel>(0.3), &inliers, &score);
+  CHECK_EQUAL(3, inliers.size());
+  CHECK_EQUAL(3, score);
+
+  // No nonnegative residual can satisfy a strict zero threshold.
+  RANSAC(kernel, ScorerEvaluator<LineKernel>(0.0), &inliers, &score);
+  EXPECT_TRUE(inliers.empty());
+  CHECK_EQUAL(0, score);
+}
+
+TEST(RansacLineFitter, ClearsPreviousConsensusWhenNoModel) {
+  struct NoModelKernel : LineKernel {
+    explicit NoModelKernel(const Mat2X &points) : LineKernel(points) {}
+    void Fit(const std::vector<uint32_t> &, std::vector<Model> *) const {}
+  };
+  const Mat2X xy = Mat2X::Zero(2, 3);
+  NoModelKernel kernel(xy);
+  std::vector<uint32_t> inliers{0, 1, 2};
+  size_t score = inliers.size();
+
+  RANSAC(kernel, ScorerEvaluator<NoModelKernel>(0.3), &inliers, &score);
+  EXPECT_TRUE(inliers.empty());
+  CHECK_EQUAL(0, score);
 }
 
 // From a GT model :
