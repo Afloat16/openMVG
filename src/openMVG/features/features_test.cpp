@@ -11,9 +11,11 @@
 
 #include "testing/testing.h"
 
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <limits>
 #include <vector>
 
 using namespace openMVG;
@@ -124,6 +126,66 @@ TEST(descriptorIO, BINARY) {
     for (int j = 0; j < DESC_LENGTH; ++j)
       EXPECT_EQ(vec_descs[i][j], vec_descs_read[i][j]);
   }
+}
+
+TEST(descriptorIO, BINARY_TRUNCATED_HEADER) {
+  const std::size_t count = 2;
+  for (const std::size_t length : {std::size_t(0), sizeof(count) - 1})
+  {
+    {
+      std::ofstream file("truncated_header.desc", std::ios::binary);
+      file.write(reinterpret_cast<const char *>(&count), length);
+    }
+    Descs_T descriptors(1);
+    EXPECT_FALSE(loadDescsFromBinFile("truncated_header.desc", descriptors));
+    EXPECT_TRUE(descriptors.empty());
+  }
+}
+
+TEST(descriptorIO, BINARY_TRUNCATED_PAYLOAD) {
+  const std::size_t count = 2;
+  const std::vector<char> payload(2 * DESC_LENGTH * sizeof(float), 0);
+  for (const std::size_t length : {std::size_t(0), payload.size() - 1})
+  {
+    {
+      std::ofstream file("truncated_payload.desc", std::ios::binary);
+      file.write(reinterpret_cast<const char *>(&count), sizeof(count));
+      file.write(payload.data(), length);
+    }
+    Descs_T descriptors(1);
+    EXPECT_FALSE(loadDescsFromBinFile("truncated_payload.desc", descriptors));
+    EXPECT_TRUE(descriptors.empty());
+  }
+}
+
+TEST(descriptorIO, BINARY_COUNT_EXCEEDS_PAYLOAD) {
+  const std::size_t count = std::numeric_limits<std::size_t>::max();
+  {
+    std::ofstream file("invalid_count.desc", std::ios::binary);
+    file.write(reinterpret_cast<const char *>(&count), sizeof(count));
+  }
+  Descs_T descriptors;
+  bool threw_exception = false;
+  bool loaded = false;
+  try
+  {
+    loaded = loadDescsFromBinFile("invalid_count.desc", descriptors);
+  }
+  catch (const std::exception &)
+  {
+    threw_exception = true;
+  }
+  EXPECT_FALSE(threw_exception);
+  EXPECT_FALSE(loaded);
+  EXPECT_TRUE(descriptors.empty());
+}
+
+TEST(descriptorIO, BINARY_EMPTY_COLLECTION) {
+  const Descs_T empty;
+  EXPECT_TRUE(saveDescsToBinFile("empty_collection.desc", empty));
+  Descs_T descriptors(1);
+  EXPECT_TRUE(loadDescsFromBinFile("empty_collection.desc", descriptors));
+  EXPECT_TRUE(descriptors.empty());
 }
 
 /* ************************************************************************* */

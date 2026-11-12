@@ -186,20 +186,33 @@ inline bool loadDescsFromBinFile(
   using VALUE = typename DescriptorsT::value_type;
 
   vec_desc.clear();
-  std::ifstream fileIn(sfileNameDescs.c_str(), std::ios::in | std::ios::binary);
+  std::ifstream fileIn(sfileNameDescs.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
   if (!fileIn.is_open())
     return false;
+  const std::streamoff file_size = fileIn.tellg();
+  if (file_size < static_cast<std::streamoff>(sizeof(std::size_t)))
+    return false;
+  fileIn.seekg(0, std::ios::beg);
+
   //Read the number of descriptor in the file
   std::size_t cardDesc = 0;
-  fileIn.read(reinterpret_cast<char*>(&cardDesc), sizeof(std::size_t));
+  if (!fileIn.read(reinterpret_cast<char*>(&cardDesc), sizeof(std::size_t)))
+    return false;
+  const std::size_t descriptor_bytes = VALUE::static_size * sizeof(typename VALUE::bin_type);
+  const std::size_t payload_bytes = static_cast<std::size_t>(file_size) - sizeof(std::size_t);
+  // Check the count before allocating; division avoids overflowing count * size.
+  if (descriptor_bytes == 0 || cardDesc > payload_bytes / descriptor_bytes)
+    return false;
+
   vec_desc.resize(cardDesc);
   for (auto & it :vec_desc) {
-    fileIn.read(reinterpret_cast<char*>(it.data()),
-      VALUE::static_size*sizeof(typename VALUE::bin_type));
+    if (!fileIn.read(reinterpret_cast<char*>(it.data()), descriptor_bytes))
+    {
+      vec_desc.clear();
+      return false;
+    }
   }
-  const bool bOk = !fileIn.bad();
-  fileIn.close();
-  return bOk;
+  return true;
 }
 
 /// Write descriptors to file (in binary mode)
