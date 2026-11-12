@@ -78,15 +78,22 @@ inline float L2_AVX
   // Accumulator
   __m256 acc (_mm256_setzero_ps());
 
-  // Compute (A-B) * (A-B) on 16 components per iteration
-  for (int j = 0; j < size; j += 8)
+  // Compute (A-B) * (A-B) on 8 components per iteration.
+  size_t j = 0;
+  for (; size - j >= 8; j += 8)
   {
     const __m256 t0 = _mm256_sub_ps(_mm256_loadu_ps(a + j), _mm256_loadu_ps(b + j));
     acc = _mm256_add_ps(acc, _mm256_mul_ps(t0, t0));
   }
   float ALIGNED32 acc_float[8];
   _mm256_store_ps(acc_float, acc);
-  return std::accumulate(acc_float, acc_float + 8, 0.f);
+  float result = std::accumulate(acc_float, acc_float + 8, 0.f);
+  for (; j < size; ++j)
+  {
+    const float diff = a[j] - b[j];
+    result += diff * diff;
+  }
+  return result;
 }
 #endif // OPENMVG_USE_AVX
 

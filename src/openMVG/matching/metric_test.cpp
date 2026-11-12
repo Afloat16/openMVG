@@ -14,6 +14,7 @@
 
 #include "testing/testing.h"
 
+#include <array>
 #include <iostream>
 
 using namespace openMVG;
@@ -37,6 +38,33 @@ TEST(Metric, L2)
   EXPECT_EQ(168.f, DistanceT<L2<float>>());
   EXPECT_EQ(168.0, DistanceT<L2<double>>());
 }
+
+TEST(Metric, L2FloatArbitraryLengths)
+{
+  // Keep nonzero differences after the requested range to detect overreads.
+  std::array<float, 136> a{};
+  std::array<float, 136> b;
+  b.fill(1.f);
+  const L2<float> metric{};
+  for (const size_t size : {0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 31, 32, 127, 128})
+  {
+    // An offset also exercises unaligned descriptor storage.
+    EXPECT_EQ(static_cast<float>(size), metric(a.data() + 1, b.data() + 1, size));
+  }
+}
+
+#ifdef OPENMVG_USE_AVX
+TEST(Metric, L2AVXArbitraryLengths)
+{
+  std::array<float, 136> a{};
+  std::array<float, 136> b;
+  b.fill(1.f);
+  for (const size_t size : {0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 31, 32, 127, 128})
+  {
+    EXPECT_EQ(static_cast<float>(size), L2_AVX(a.data() + 1, b.data() + 1, size));
+  }
+}
+#endif
 
 TEST(Metric, HAMMING_BITSET)
 {
