@@ -26,6 +26,7 @@
 
 #include "openMVG/image/image_convolution.hpp"
 #include <cassert>
+#include <cmath>
 
 namespace openMVG
 {
@@ -280,8 +281,8 @@ template<typename Image>
 void ImageGaussianFilter( const Image & img , const double sigma , Image & out , const int k = 3 )
 {
   // Compute Gaussian filter
-  const int k_size    = ( int ) 2 * k * sigma + 1;
-  const int half_k_size = k_size / 2;
+  const int half_k_size = static_cast<int>(std::ceil(k * sigma));
+  const int k_size = 2 * half_k_size + 1;
 
   const double exp_scale = 1.0 / ( 2.0 * sigma * sigma );
 
