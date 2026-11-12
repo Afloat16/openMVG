@@ -159,7 +159,9 @@ public:
     size_t NN
   ) override
   {
-    if (!HNSW_matcher_)
+    if (!HNSW_matcher_ ||
+        NN > HNSW_matcher_->cur_element_count ||
+        nbQuery < 1)
       return false;
     // EfSearch parameter could not be < NN.
     // -

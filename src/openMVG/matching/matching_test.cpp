@@ -117,6 +117,60 @@ TEST(Matching, ArrayMatcher_Hnsw_Simple__NN)
   EXPECT_EQ(IndMatch(0,4), vec_nIndice[4]);
 }
 
+TEST(Matching, Hnsw_RejectsIncompleteNeighbourSets)
+{
+  const float array[] = {1, 3};
+  const float query[] = {0, 4};
+  HNSWMatcher<float> matcher;
+  EXPECT_TRUE( matcher.Build(array, 2, 1) );
+
+  IndMatches indices{IndMatch(9, 9)};
+  std::vector<float> distances{42.0f};
+  EXPECT_FALSE( matcher.SearchNeighbours(query, 2, &indices, &distances, 3) );
+  // Failed queries must not publish partially filled neighbour arrays.
+  EXPECT_EQ( 1, indices.size() );
+  EXPECT_EQ( 1, distances.size() );
+  EXPECT_EQ( IndMatch(9, 9), indices[0] );
+  EXPECT_NEAR( 42.0f, distances[0], 1e-6 );
+
+  EXPECT_TRUE( matcher.SearchNeighbours(query, 2, &indices, &distances, 2) );
+  EXPECT_EQ( 4, indices.size() );
+  EXPECT_EQ( 4, distances.size() );
+  EXPECT_EQ( IndMatch(0, 0), indices[0] );
+  EXPECT_EQ( IndMatch(0, 1), indices[1] );
+  EXPECT_EQ( IndMatch(1, 1), indices[2] );
+  EXPECT_EQ( IndMatch(1, 0), indices[3] );
+  EXPECT_NEAR( 1.0f, distances[0], 1e-6 );
+  EXPECT_NEAR( 9.0f, distances[1], 1e-6 );
+  EXPECT_NEAR( 1.0f, distances[2], 1e-6 );
+  EXPECT_NEAR( 9.0f, distances[3], 1e-6 );
+}
+
+TEST(Matching, Hnsw_SingleDescriptorCannotSupplyRatioTest)
+{
+  const float array[] = {1};
+  const float query[] = {4, 6};
+  HNSWMatcher<float> matcher;
+  EXPECT_TRUE( matcher.Build(array, 1, 1) );
+
+  IndMatches indices;
+  std::vector<float> distances;
+  EXPECT_FALSE( matcher.SearchNeighbours(query, 2, &indices, &distances, 2) );
+  EXPECT_TRUE( indices.empty() );
+  EXPECT_TRUE( distances.empty() );
+
+  EXPECT_TRUE( matcher.SearchNeighbours(query, 2, &indices, &distances, 1) );
+  EXPECT_EQ( 2, indices.size() );
+  EXPECT_EQ( 2, distances.size() );
+  EXPECT_EQ( IndMatch(0, 0), indices[0] );
+  EXPECT_EQ( IndMatch(1, 0), indices[1] );
+  EXPECT_NEAR( 9.0f, distances[0], 1e-6 );
+  EXPECT_NEAR( 25.0f, distances[1], 1e-6 );
+
+  EXPECT_FALSE( matcher.SearchNeighbours(query, 0, &indices, &distances, 1) );
+  EXPECT_FALSE( matcher.SearchNeighbours(query, -1, &indices, &distances, 1) );
+}
+
 //-- Test LIMIT case (empty arrays)
 
 TEST(Matching, ArrayMatcherBruteForce_Simple_EmptyArrays)
