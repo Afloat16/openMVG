@@ -328,7 +328,7 @@ void AKAZE::Feature_Detection(std::vector<AKAZEKeypoint>& kpts) const
           point.y = jx * ratio + 0.5 * (ratio-1);
           point.angle = 0.0f;
           point.class_id = p * options_.iNbSlicePerOctave + q;
-          vec_kpts_perSlice[options_.iNbOctave * p + q].emplace_back( point, false );
+          vec_kpts_perSlice[options_.iNbSlicePerOctave * p + q].emplace_back( point, false );
         }
       }
     }
