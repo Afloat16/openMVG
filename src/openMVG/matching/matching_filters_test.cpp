@@ -39,6 +39,60 @@ TEST( matching, setIntersection)
 }
 
 
+TEST(matching, FilterRetainsAllAcceptedMatches)
+{
+  const std::vector<int> forward_matches{2, 1, 0, 1, 1, 0};
+  const std::vector<int> reverse_matches{1, 0, 2, 0, 0, 1};
+  const std::vector<float> distances{1, 4, 1, 4, 1, 4};
+  const IndMatches expected{IndMatch(0, 2), IndMatch(1, 0), IndMatch(2, 1)};
+
+  for (const auto mode : {MATCHFILTER_SYMMETRIC,
+                         MATCHFILTER_NNDISTANCERATIO,
+                         MATCHFILER_SYM_AND_NNDISTANCERATIO})
+  {
+    IndMatches matches;
+    Filter(2, forward_matches, distances, reverse_matches, distances, matches, mode);
+    EXPECT_EQ(expected.size(), matches.size());
+    EXPECT_TRUE(expected == matches);
+  }
+}
+
+TEST(matching, FilterRetainsSingleAcceptedMatch)
+{
+  const std::vector<int> forward_matches{1, 0};
+  const std::vector<int> reverse_matches{1, 0, 0, 1};
+  const std::vector<float> distances{1, 4};
+
+  for (const auto mode : {MATCHFILTER_SYMMETRIC,
+                         MATCHFILTER_NNDISTANCERATIO,
+                         MATCHFILER_SYM_AND_NNDISTANCERATIO})
+  {
+    IndMatches matches;
+    Filter(2, forward_matches, distances, reverse_matches, distances, matches, mode);
+    EXPECT_EQ(1, matches.size());
+    EXPECT_TRUE(matches == IndMatches({IndMatch(0, 1)}));
+  }
+}
+
+TEST(matching, FilterReturnsNoRejectedMatches)
+{
+  const std::vector<int> forward_matches{1, 0};
+  const std::vector<int> reverse_matches{1, 0, 1, 0};
+  const std::vector<float> distances{4, 4};
+
+  for (const auto mode : {MATCHFILTER_SYMMETRIC,
+                         MATCHFILTER_NNDISTANCERATIO,
+                         MATCHFILER_SYM_AND_NNDISTANCERATIO})
+  {
+    IndMatches matches;
+    Filter(2, forward_matches, distances, reverse_matches, distances, matches, mode);
+    EXPECT_TRUE(matches.empty());
+
+    Filter(2, {}, {}, {}, {}, matches, mode);
+    EXPECT_TRUE(matches.empty());
+  }
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

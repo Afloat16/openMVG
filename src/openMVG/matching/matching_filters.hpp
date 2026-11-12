@@ -172,7 +172,7 @@ inline void Filter
   {
   case MATCHFILTER_NNDISTANCERATIO:
 
-    for (size_t i=0; i < vec_NNDistRatioIndexes.size()-1&& vec_NNDistRatioIndexes.size()>0; ++i)
+    for (size_t i=0; i < vec_NNDistRatioIndexes.size(); ++i)
     {
       vec_outIndex.push_back( IndMatch(vec_NNDistRatioIndexes[i], vec_Matches01[vec_NNDistRatioIndexes[i]*NN]) );
     }
@@ -181,7 +181,7 @@ inline void Filter
 
   case MATCHFILTER_SYMMETRIC:
 
-    for (size_t i=0; i < vec_symmetricIndex.size()-1&& vec_symmetricIndex.size()>0; ++i)
+    for (size_t i=0; i < vec_symmetricIndex.size(); ++i)
     {
       vec_outIndex.push_back( IndMatch(vec_symmetricIndex[i], vec_Matches01[vec_symmetricIndex[i]*NN]) );
     }
@@ -196,7 +196,7 @@ inline void Filter
       vec_NNDistRatioIndexes.begin(), vec_NNDistRatioIndexes.end(),
       vec_indexes);
 
-    for (size_t i=0; i < vec_indexes.size()-1 && vec_indexes.size()>0; ++i)
+    for (size_t i=0; i < vec_indexes.size(); ++i)
       vec_outIndex.push_back( IndMatch(vec_indexes[i], vec_Matches01[vec_indexes[i]*NN]) );
 
     break;
